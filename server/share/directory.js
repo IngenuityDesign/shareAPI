@@ -4,7 +4,8 @@
 
 var fs          = require('fs'),
     when        = require('when'),
-    pathUtil    = require('path');
+    pathUtil    = require('path'),
+    access      = require('../auth');
 
 var createFileReturn = function( curFile, path, url, callback ) {
     fs.stat( url + "\\" + curFile, function(err, stats) {
@@ -61,24 +62,41 @@ module.exports = {
                     fs.stat( url, function( err, stats ) {
                         if (err) reject( 404 );
                         if (stats.isDirectory()) {
-                            fs.readdir( url, function(err, filesFound) {
-                                if (err) return false;
-                                statDirectory( filesFound, path, url)
-                                .then(function(data) {
-                                    resolve(data);
-                                })
+                            //we're in a directory so we need to try to look for an access file.
+                            
+                            access.dirIsAccessibleByUser(url).then(function() {
+                                //it is accessible
+                                fs.readdir( url, function(err, filesFound) {
+                                    if (err) return false;
+                                    statDirectory( filesFound, path, url)
+                                    .then(function(data) {
+                                        resolve(data);
+                                    })
+                                });
+                            }).catch(function() {
+                                //it is not accessible
+                                reject( 404 );
                             });
+                            
+                            
                         } else if (stats.isFile()) {
-                            resolve({
-                                template: 'file',
-                                path: path,
-                                file: pathUtil.basename(path),
-                                parent: pathUtil.dirname(path),
-                                isDirectory: false,
-                                size: stats.size,
-                                created: stats.ctime,
-                                modified: stats.mtime
+                            //we need to check parent
+                            
+                            access.fileIsAccessibleByUser(url).then(function() {
+                                resolve({
+                                    template: 'file',
+                                    path: path,
+                                    file: pathUtil.basename(path),
+                                    parent: pathUtil.dirname(path),
+                                    isDirectory: false,
+                                    size: stats.size,
+                                    created: stats.ctime,
+                                    modified: stats.mtime
+                                });    
+                            }).otherwise(function() {
+                                reject(440);
                             });
+                            
                         } else {
                             //404
                             reject(404);
