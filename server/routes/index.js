@@ -4,31 +4,35 @@ var fileServer  = require('../util.js'),
     Responder   = require('../util/response.js');
 
 var Router = function(ctx) {
+    
     return {
         getFile: function(req,res) {
-            ctx.emit('request', 'hey');
 
             var path = req.params[0] || false;
-            var server = fileServer(req,res);
+            ctx.emit('request', {path: path});
+            
+            /*
+             * Boot up the file server!
+             * 
+             */
 
             var TheResponse = new Responder( res );
 
             if (path) {
-                server.processFilepath( path ).then(function(data) {
-                    TheResponse.JSend(data);
+                fileServer.processFilepath( path ).then(function(data) {
+                    TheResponse.JSend(data); //send a JSON response
                 }).catch(function(err) {
-                    server.errors.processError(err, function(data) {
+                    fileServer.errors.processError(err, function(data) {
                         TheResponse.JSend(data.data, data.headers);
                     });
                 });
             } else {
-                TheResponse.JSend(server.errors.malformedURL());
+                TheResponse.JSend(fileServer.errors.malformedURL());
             }
         },
         postFile: function(req,res) {
 
             var path = req.params[0] || false;
-            var server = fileServer(req,res);
 
             /*
              * Should have been sent some info in the post body
@@ -40,7 +44,6 @@ var Router = function(ctx) {
         deleteFile: function(req,res) {
 
             var path = req.params[0] || false;
-            var server = fileServer(req,res);
 
             var TheResponse = new Responder( res );
 
@@ -49,7 +52,7 @@ var Router = function(ctx) {
              * 
              */
 
-            server.errors.processError(403, function(data) {
+            fileServer.errors.processError(403, function(data) {
                 TheResponse.JSend(data.data, data.headers); 
             });
 
