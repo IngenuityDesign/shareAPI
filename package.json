@@ -17,6 +17,7 @@
     "mocha": "~1.21.0"
   },
   "scripts": {
+    "start": "node index.js",
     "test": "grunt test"
   },
   "repository": {
