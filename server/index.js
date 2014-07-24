@@ -1,88 +1,46 @@
 'use strict';
 
 var express = require('express'),
-    fileServer  = require('./util.js');
+    fileServer  = require('./util.js'),
+    routes      = require('./routes'),
+    events      = require('./events'),
+    session = require('cookie-session'),
+    compression = require('compression'),
+    bodyParser = require('body-parser');
 
 var Server = function() {
 
-    var app = express();
-    var Responder = function(res) {
+    app = express();
+    app.use(session({
+        keys: ['key1', 'key2'],
+        secureProxy: false // if you do SSL outside of node
+    }));
+    app.use(compression());
+    
+    // parse application/x-www-form-urlencoded
+    app.use(bodyParser.urlencoded({ extended: false }))
 
-        this.JSend = function( data, header ) {
-
-            if (!header) header = 200;
-            var dataBody = JSON.stringify(data);
-
-            res.set({
-                'Content-Type': 'application/json',
-                'Content-Length': dataBody.length
-            });
-
-            res.status( header );
-
-            res.end( dataBody );
-        }
-
-        return this;
-
-    }
-
+    // parse application/json
+    app.use(bodyParser.json())
+    
+    
+    var Hooks = events.classy; //this creates an events hooker for classes
+    this.on = Hooks.on; //this passes the on so it can be accessed through the class
+                         
     var Base = function( path ) {
         return '/api/v1/files' + path;
     }
+    
+    app.get(Base('/*'), routes.getFile);
+    app.post(Base('/*'), routes.postFile);
+    app.delete(Base('/*'), routes.deleteFile);
 
-    app.get(Base('/*'), function(req,res) {
-        var path = req.params[0] || false;
-        var server = fileServer(req,res);
-
-        var TheResponse = new Responder( res );
-
-        if (path) {
-            server.processFilepath( path ).then(function(data) {
-                TheResponse.JSend(data);
-            }).catch(function(err) {
-                server.errors.processError(err, function(data) {
-                    TheResponse.JSend(data.data, data.headers);
-                });
-            });
-        } else {
-            TheResponse.JSend(server.errors.malformedURL());
-        }
-    });
-
-    app.post(Base('/*'), function(req,res) {
-
-        var path = req.params[0] || false;
-        var server = fileServer(req,res);
-
-        /*
-         * Should have been sent some info in the post body
-         * 
-         */
-
-
-    });
-
-    app.delete(Base('/*'), function(req,res) {
-
-        var path = req.params[0] || false;
-        var server = fileServer(req,res);
-
-        var TheResponse = new Responder( res );
-
-        /*
-         * Path is all we need here. Not even sure if this will be implemented so let's just make it forbidden
-         * 
-         */
-
-        server.errors.processError(403, function(data) {
-            TheResponse.JSend(data.data, data.headers); 
-        });
-
-    });
-
-    app.listen(8080, '192.168.50.142');
-
+    this.listen = app.listen;
+    
+    return this;
+    
 }
 
-module.exports = Server;
+module.exports = function() {
+    return new Server();
+};
