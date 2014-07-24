@@ -4,16 +4,6 @@ var when = require('when'),
     fs   = require('fs'),
     path = require('path');
 
-function parse( jsonContent ) {
-    try {
-        var config = JSON.parse(jsonContent);
-        return config;
-    } catch (err) {
-        console.logf('improper config');
-        return defaultConfig();
-    }
-}
-
 function defaultConfig() {
     return {
            
@@ -27,14 +17,17 @@ function getDirectoryConfig(url) {
             oldpath = "";
         while (url.length > 1 && oldpath != url) {
             if (fs.existsSync(urlWithShare)) {
+                //make sure it stops
+                oldpath = url;
                 fs.readFile( urlWithShare, {encoding:'utf8'}, function(err,data) {
-                    resolve(parse(data));
+                    if (!err)
+                        resolve(data);
+                    else reject(err);
                 });
-                break;
+                return; //get out of here
             } else {
                 oldpath = url;
                 url = path.dirname(url)
-                console.log(url);
             }
         }
         resolve(defaultConfig());
