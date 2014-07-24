@@ -54,7 +54,7 @@ module.exports = {
 
     fetchDirectory: function ( path ) {
         var url = "\\\\192.168.50.50\\files\\" + path;
-        console.log(url);
+        
         return when.promise( function(resolve, reject, notify ) {
             fs.exists(url, function(exists) {
                 if (exists) {
