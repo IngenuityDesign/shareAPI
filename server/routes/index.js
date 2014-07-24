@@ -8,7 +8,7 @@ var Router = function(ctx) {
     return {
         getFile: function(req,res) {
 
-            var path = req.params[0] || false;
+            var path = req.params[0] || '/';
             ctx.emit('request', {path: path});
             
             /*

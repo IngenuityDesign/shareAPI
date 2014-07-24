@@ -32,6 +32,8 @@ var Server = function() {
     }
         
     app.get(Base('/*'), routes.getFile);
+    app.get(Base('/'), routes.getFile);
+    
     app.post(Base('/*'), routes.postFile);
     app.delete(Base('/*'), routes.deleteFile);
     
