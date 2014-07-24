@@ -1,16 +1,19 @@
 'use strict';
 
 var express = require('express'),
-    fileServer  = require('./util.js'),
-    routes      = require('./routes'),
-    events      = require('./events'),
     session = require('cookie-session'),
     compression = require('compression'),
-    bodyParser = require('body-parser');
+    bodyParser = require('body-parser'),
+    EventEmitter = require('events').EventEmitter;;
 
 var Server = function() {
 
-    app = express();
+    var app         = express(),
+        routes      = require('./routes')(this);
+    
+    
+    this.emitter = new EventEmitter();
+    
     app.use(session({
         keys: ['key1', 'key2'],
         secureProxy: false // if you do SSL outside of node
@@ -23,19 +26,25 @@ var Server = function() {
     // parse application/json
     app.use(bodyParser.json())
     
-    
-    var Hooks = events.classy; //this creates an events hooker for classes
-    this.on = Hooks.on; //this passes the on so it can be accessed through the class
                          
     var Base = function( path ) {
         return '/api/v1/files' + path;
     }
-    
+        
     app.get(Base('/*'), routes.getFile);
     app.post(Base('/*'), routes.postFile);
     app.delete(Base('/*'), routes.deleteFile);
-
-    this.listen = app.listen;
+    
+    this.listen = function(port,ip) {
+        if (ip)
+            app.listen(port,ip);
+        else app.listen(port);
+    }
+    
+    this.on = this.emitter.addListener;
+    this.emit = this.emitter.emit;
+    
+    //emitter.emit( 'event', args );
     
     return this;
     
